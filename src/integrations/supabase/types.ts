@@ -339,6 +339,45 @@ export type Database = {
           },
         ]
       }
+      services: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          currency: string | null
+          description: string
+          id: string
+          is_active: boolean | null
+          price: number | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description: string
+          id?: string
+          is_active?: boolean | null
+          price?: number | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          price?: number | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       skills: {
         Row: {
           created_at: string | null
