@@ -1,113 +1,45 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState, useCallback } from 'react';
+import { listServices, deleteService, Service } from '@/lib/services';
 import ServiceCard from './ServiceCard';
-import { toast } from '@/hooks/use-toast';
-
-interface Service {
-  id: string;
-  title: string;
-  description: string;
-  provider_name: string;
-  price_range: string;
-  rating: number;
-  location: string;
-  availability: string;
-  skill_name: string;
-}
+import { EditServiceModal } from './EditServiceModal';
 
 interface ServiceGridProps {
   searchQuery: string;
+  refreshTrigger?: number;
 }
 
-const ServiceGrid = ({ searchQuery }: ServiceGridProps) => {
+const ServiceGrid = ({ searchQuery, refreshTrigger }: ServiceGridProps) => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+
+  const fetchServices = useCallback(async () => {
+    setLoading(true);
+    const data = await listServices(searchQuery);
+    setServices(data);
+    setLoading(false);
+  }, [searchQuery]);
 
   useEffect(() => {
     fetchServices();
-  }, [searchQuery]);
+  }, [fetchServices, refreshTrigger]);
 
-  const fetchServices = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch requests with related data
-      let query = supabase
-        .from('requests')
-        .select(`
-          request_id,
-          title,
-          description,
-          budget_min,
-          budget_max,
-          customers!inner(
-            address
-          ),
-          skills!inner(
-            name
-          ),
-          assignments!inner(
-            providers!inner(
-              profiles!inner(
-                first_name,
-                last_name
-              ),
-              average_rating
-            )
-          )
-        `);
+  const handleEdit = (service: Service) => {
+    setEditingService(service);
+  };
 
-      if (searchQuery) {
-        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+  const handleDelete = async (serviceId: string) => {
+    if (window.confirm('Are you sure you want to delete this service?')) {
+      const success = await deleteService(serviceId);
+      if (success) {
+        setServices(prev => prev.filter(s => s.id !== serviceId));
       }
-
-      const { data, error } = await query.limit(20);
-
-      if (error) {
-        console.error('Error fetching services:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load services",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Transform data to match our Service interface
-      const transformedServices: Service[] = (data || []).map((item: any) => ({
-        id: item.request_id,
-        title: item.title || 'Service Request',
-        description: item.description || 'No description available',
-        provider_name: item.assignments?.[0]?.providers?.profiles?.first_name 
-          ? `${item.assignments[0].providers.profiles.first_name} ${item.assignments[0].providers.profiles.last_name || ''}`.trim()
-          : 'Provider',
-        price_range: item.budget_min && item.budget_max 
-          ? `₹${item.budget_min} - ₹${item.budget_max}`
-          : 'Price on request',
-        rating: item.assignments?.[0]?.providers?.average_rating || 4.5,
-        location: item.customers?.address || 'Location not specified',
-        availability: 'Available',
-        skill_name: item.skills?.name || 'General Service',
-      }));
-
-      setServices(transformedServices);
-    } catch (error) {
-      console.error('Error:', error);
-      toast({
-        title: "Error",
-        description: "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleServiceSelect = (serviceId: string) => {
-    toast({
-      title: "Service Selected",
-      description: "Contact the provider to book this service.",
-    });
+  const handleEditComplete = () => {
+    setEditingService(null);
+    fetchServices();
   };
 
   if (loading) {
@@ -132,15 +64,25 @@ const ServiceGrid = ({ searchQuery }: ServiceGridProps) => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {services.map((service) => (
-        <ServiceCard
-          key={service.id}
-          service={service}
-          onSelect={handleServiceSelect}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {services.map((service) => (
+          <ServiceCard
+            key={service.id}
+            service={service}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        ))}
+      </div>
+      
+      <EditServiceModal
+        open={!!editingService}
+        onOpenChange={(open) => !open && setEditingService(null)}
+        service={editingService}
+        onServiceUpdated={handleEditComplete}
+      />
+    </>
   );
 };
 

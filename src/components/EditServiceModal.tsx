@@ -1,20 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { createService } from '@/lib/services';
+import { updateService, Service } from '@/lib/services';
 import { Loader2 } from 'lucide-react';
 
-interface AddServiceModalProps {
+interface EditServiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onServiceAdded?: () => void;
+  service: Service | null;
+  onServiceUpdated?: () => void;
 }
 
-export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServiceModalProps) => {
+export const EditServiceModal = ({ open, onOpenChange, service, onServiceUpdated }: EditServiceModalProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -23,17 +24,21 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
   const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setCategory('');
-    setPrice('');
-    setTagsInput('');
-    setIsActive(true);
-  };
+  useEffect(() => {
+    if (service) {
+      setTitle(service.title);
+      setDescription(service.description);
+      setCategory(service.category || '');
+      setPrice(service.price?.toString() || '');
+      setTagsInput(service.tags?.join(', ') || '');
+      setIsActive(service.is_active);
+    }
+  }, [service]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!service) return;
+    
     setLoading(true);
 
     const tags = tagsInput
@@ -41,7 +46,7 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
       .map(tag => tag.trim())
       .filter(tag => tag.length > 0);
 
-    const result = await createService({
+    const result = await updateService(service.id, {
       title,
       description,
       category: category || null,
@@ -54,9 +59,8 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
     setLoading(false);
 
     if (result) {
-      resetForm();
       onOpenChange(false);
-      onServiceAdded?.();
+      onServiceUpdated?.();
     }
   };
 
@@ -64,14 +68,14 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-primary">Add New Service</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-primary">Edit Service</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Service Title *</Label>
+            <Label htmlFor="edit-title">Service Title *</Label>
             <Input
-              id="title"
+              id="edit-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Home Cleaning Service"
@@ -80,9 +84,9 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+            <Label htmlFor="edit-description">Description *</Label>
             <Textarea
-              id="description"
+              id="edit-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe your service in detail..."
@@ -92,9 +96,9 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
+            <Label htmlFor="edit-category">Category</Label>
             <Input
-              id="category"
+              id="edit-category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               placeholder="e.g., Cleaning, Plumbing, Electrical"
@@ -102,9 +106,9 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="price">Price (₹)</Label>
+            <Label htmlFor="edit-price">Price (₹)</Label>
             <Input
-              id="price"
+              id="edit-price"
               type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
@@ -115,9 +119,9 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tags">Tags (comma separated)</Label>
+            <Label htmlFor="edit-tags">Tags (comma separated)</Label>
             <Input
-              id="tags"
+              id="edit-tags"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="cleaning, home, professional"
@@ -126,11 +130,11 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
 
           <div className="flex items-center space-x-2">
             <Switch
-              id="is_active"
+              id="edit_is_active"
               checked={isActive}
               onCheckedChange={setIsActive}
             />
-            <Label htmlFor="is_active">Active</Label>
+            <Label htmlFor="edit_is_active">Active</Label>
           </div>
 
           <div className="flex gap-3 pt-4">
@@ -150,10 +154,10 @@ export const AddServiceModal = ({ open, onOpenChange, onServiceAdded }: AddServi
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding...
+                  Saving...
                 </>
               ) : (
-                'Add Service'
+                'Save Changes'
               )}
             </Button>
           </div>
