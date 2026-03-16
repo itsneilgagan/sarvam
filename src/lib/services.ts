@@ -80,11 +80,12 @@ export async function listServices(options?: ListOptions): Promise<Service[]> {
 
 export async function listProviderServices(providerId: string): Promise<Service[]> {
   try {
-    const { data, error }: any = await supabase
+    const q: any = supabase
       .from('services')
       .select('*')
-      .eq('provider_id' as any, providerId)
+      .eq('provider_id', providerId)
       .order('created_at', { ascending: false });
+    const { data, error } = await q;
 
     if (error) return [];
 
