@@ -2,96 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 20 14% 4%;
-    --foreground: 60 30% 96%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
 
-    --card: 24 10% 8%;
-    --card-foreground: 60 30% 96%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 24 10% 8%;
-    --popover-foreground: 60 30% 96%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 348 83% 47%;
-    --primary-foreground: 60 30% 96%;
-    --primary-dark: 348 83% 37%;
+    --primary: 355 82% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 355 82% 40%;
 
-    --secondary: 24 10% 12%;
-    --secondary-foreground: 60 30% 96%;
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 24 10% 12%;
-    --muted-foreground: 24 5% 65%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 348 83% 47%;
-    --accent-foreground: 60 30% 96%;
+    --accent: 355 82% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 24 10% 15%;
-    --input: 24 10% 15%;
-    --ring: 348 83% 47%;
-
-    --burgundy: 348 83% 47%;
-    --burgundy-dark: 348 83% 37%;
-    --burgundy-light: 348 83% 57%;
-
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-dark)));
-    --gradient-bg: linear-gradient(135deg, hsl(var(--background)), hsl(24 10% 6%));
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 355 82% 50%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 20 14% 4%;
-    --foreground: 60 30% 96%;
-
-    --card: 24 10% 8%;
-    --card-foreground: 60 30% 96%;
-
-    --popover: 24 10% 8%;
-    --popover-foreground: 60 30% 96%;
-
-    --primary: 348 83% 47%;
-    --primary-foreground: 60 30% 96%;
-    --primary-dark: 348 83% 37%;
-
-    --secondary: 24 10% 12%;
-    --secondary-foreground: 60 30% 96%;
-
-    --muted: 24 10% 12%;
-    --muted-foreground: 24 5% 65%;
-
-    --accent: 348 83% 47%;
-    --accent-foreground: 60 30% 96%;
-
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 355 82% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 355 82% 40%;
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 355 82% 50%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 24 10% 15%;
-    --input: 24 10% 15%;
-    --ring: 348 83% 47%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 355 82% 50%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -110,5 +84,30 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
