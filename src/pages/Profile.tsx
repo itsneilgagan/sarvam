@@ -135,9 +135,6 @@ const ProfilePage = () => {
   };
 
   // Upsert fallback if profile is missing
-  const [fetchError, setFetchError] = useState(false);
-  const [upserting, setUpserting] = useState(false);
-
   useEffect(() => {
     const ensureProfile = async () => {
       if (user && !profile && !upserting) {
