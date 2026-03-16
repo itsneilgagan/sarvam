@@ -5,53 +5,112 @@ export type Service = {
   id: string;
   title: string;
   description: string;
+  short_description?: string | null;
   category?: string | null;
   price?: number | null;
   currency?: string | null;
   tags: string[];
   is_active: boolean;
+  provider_id?: string | null;
+  cover_image_url?: string | null;
+  city?: string | null;
   created_at: string;
   updated_at: string;
 };
 
 export type ServiceInput = Omit<Service, 'id' | 'created_at' | 'updated_at'>;
 
-export async function listServices(query?: string): Promise<Service[]> {
+export async function listServices(options?: {
+  query?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  city?: string;
+  limit?: number;
+  providerId?: string;
+}): Promise<Service[]> {
   try {
-    let supabaseQuery = supabase
+    let q = supabase
       .from('services')
       .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    if (query && query.trim()) {
-      supabaseQuery = supabaseQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`);
+    if (options?.query?.trim()) {
+      const search = options.query.trim();
+      q = q.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+    if (options?.category && options.category !== 'All') {
+      q = q.eq('category', options.category);
+    }
+    if (options?.minPrice !== undefined) {
+      q = q.gte('price', options.minPrice);
+    }
+    if (options?.maxPrice !== undefined) {
+      q = q.lte('price', options.maxPrice);
+    }
+    if (options?.city) {
+      q = q.eq('city' as any, options.city);
+    }
+    if (options?.providerId) {
+      q = q.eq('provider_id' as any, options.providerId);
+    }
+    if (options?.limit) {
+      q = q.limit(options.limit);
     }
 
-    const { data, error } = await supabaseQuery;
+    const { data, error } = await q;
 
     if (error) {
       console.error('Error fetching services:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load services",
-        variant: "destructive",
-      });
       return [];
     }
 
     return (data || []).map(item => ({
       ...item,
       tags: item.tags || [],
-    }));
+    })) as Service[];
   } catch (error) {
     console.error('Error:', error);
-    toast({
-      title: "Error",
-      description: "Something went wrong while loading services",
-      variant: "destructive",
-    });
     return [];
+  }
+}
+
+export async function listProviderServices(providerId: string): Promise<Service[]> {
+  try {
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('provider_id' as any, providerId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error:', error);
+      return [];
+    }
+
+    return (data || []).map(item => ({
+      ...item,
+      tags: item.tags || [],
+    })) as Service[];
+  } catch (error) {
+    console.error('Error:', error);
+    return [];
+  }
+}
+
+export async function getService(id: string): Promise<Service | null> {
+  try {
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return null;
+    return { ...data, tags: data.tags || [] } as Service;
+  } catch {
+    return null;
   }
 }
 
@@ -67,36 +126,23 @@ export async function createService(payload: ServiceInput): Promise<Service | nu
         currency: payload.currency || 'INR',
         tags: payload.tags || [],
         is_active: payload.is_active ?? true,
-      })
+        provider_id: payload.provider_id,
+        cover_image_url: payload.cover_image_url,
+        city: payload.city,
+        short_description: payload.short_description,
+      } as any)
       .select()
       .single();
 
     if (error) {
-      console.error('Error creating service:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create service",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to create service. Please try again.", variant: "destructive" });
       return null;
     }
 
-    toast({
-      title: "Success",
-      description: "Service created successfully",
-    });
-
-    return {
-      ...data,
-      tags: data.tags || [],
-    };
-  } catch (error: any) {
-    console.error('Error:', error);
-    toast({
-      title: "Error",
-      description: error.message || "Something went wrong",
-      variant: "destructive",
-    });
+    toast({ title: "Success", description: "Service published successfully!" });
+    return { ...data, tags: data.tags || [] } as Service;
+  } catch {
+    toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
     return null;
   }
 }
@@ -105,37 +151,20 @@ export async function updateService(id: string, patch: Partial<ServiceInput>): P
   try {
     const { data, error } = await supabase
       .from('services')
-      .update(patch)
+      .update(patch as any)
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
-      console.error('Error updating service:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update service",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to update service.", variant: "destructive" });
       return null;
     }
 
-    toast({
-      title: "Success",
-      description: "Service updated successfully",
-    });
-
-    return {
-      ...data,
-      tags: data.tags || [],
-    };
-  } catch (error: any) {
-    console.error('Error:', error);
-    toast({
-      title: "Error",
-      description: error.message || "Something went wrong",
-      variant: "destructive",
-    });
+    toast({ title: "Success", description: "Service updated!" });
+    return { ...data, tags: data.tags || [] } as Service;
+  } catch {
+    toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
     return null;
   }
 }
@@ -148,28 +177,31 @@ export async function deleteService(id: string): Promise<boolean> {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting service:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete service",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to delete service.", variant: "destructive" });
       return false;
     }
 
-    toast({
-      title: "Success",
-      description: "Service deleted successfully",
-    });
-
+    toast({ title: "Deleted", description: "Service removed." });
     return true;
-  } catch (error: any) {
-    console.error('Error:', error);
-    toast({
-      title: "Error",
-      description: error.message || "Something went wrong",
-      variant: "destructive",
-    });
+  } catch {
+    toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
     return false;
   }
+}
+
+export async function uploadServiceCover(file: File): Promise<string | null> {
+  const ext = file.name.split('.').pop();
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from('service-covers')
+    .upload(fileName, file);
+
+  if (error) {
+    toast({ title: "Upload Error", description: "Failed to upload image.", variant: "destructive" });
+    return null;
+  }
+
+  const { data } = supabase.storage.from('service-covers').getPublicUrl(fileName);
+  return data.publicUrl;
 }
