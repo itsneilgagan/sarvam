@@ -102,39 +102,66 @@ export type Database = {
       }
       profiles: {
         Row: {
+          area: string | null
           avatar_url: string | null
+          bio: string | null
+          business_name: string | null
+          category: string | null
+          city: string | null
+          cover_url: string | null
           created_at: string | null
+          dob: string | null
           email: string | null
           first_name: string | null
           full_name: string | null
           id: string
           last_name: string | null
+          lat: number | null
+          lng: number | null
           middle_name: string | null
           phone: string | null
           role: string
           updated_at: string | null
         }
         Insert: {
+          area?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          business_name?: string | null
+          category?: string | null
+          city?: string | null
+          cover_url?: string | null
           created_at?: string | null
+          dob?: string | null
           email?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
           last_name?: string | null
+          lat?: number | null
+          lng?: number | null
           middle_name?: string | null
           phone?: string | null
           role?: string
           updated_at?: string | null
         }
         Update: {
+          area?: string | null
           avatar_url?: string | null
+          bio?: string | null
+          business_name?: string | null
+          category?: string | null
+          city?: string | null
+          cover_url?: string | null
           created_at?: string | null
+          dob?: string | null
           email?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
           last_name?: string | null
+          lat?: number | null
+          lng?: number | null
           middle_name?: string | null
           phone?: string | null
           role?: string
@@ -342,36 +369,51 @@ export type Database = {
       services: {
         Row: {
           category: string | null
+          city: string | null
+          cover_image_url: string | null
           created_at: string | null
           currency: string | null
           description: string
           id: string
           is_active: boolean | null
           price: number | null
+          provider_id: string | null
+          search_vector: unknown
+          short_description: string | null
           tags: string[] | null
           title: string
           updated_at: string | null
         }
         Insert: {
           category?: string | null
+          city?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           currency?: string | null
           description: string
           id?: string
           is_active?: boolean | null
           price?: number | null
+          provider_id?: string | null
+          search_vector?: unknown
+          short_description?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string | null
         }
         Update: {
           category?: string | null
+          city?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           currency?: string | null
           description?: string
           id?: string
           is_active?: boolean | null
           price?: number | null
+          provider_id?: string | null
+          search_vector?: unknown
+          short_description?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string | null
