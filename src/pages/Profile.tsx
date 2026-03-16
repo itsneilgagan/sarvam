@@ -132,6 +132,43 @@ const ProfilePage = () => {
     }
   };
 
+  // Upsert fallback if profile is missing
+  const [fetchError, setFetchError] = useState(false);
+  const [upserting, setUpserting] = useState(false);
+
+  useEffect(() => {
+    const ensureProfile = async () => {
+      if (user && !profile && !upserting) {
+        setUpserting(true);
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          await supabase.from('profiles').upsert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || '',
+            role: user.user_metadata?.role || 'customer',
+          } as any);
+          await refreshProfile();
+        } catch {
+          setFetchError(true);
+        }
+        setUpserting(false);
+      }
+    };
+    ensureProfile();
+  }, [user, profile, upserting, refreshProfile]);
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-6 text-center max-w-sm">
+          <p className="text-destructive font-medium mb-3">Failed to load profile</p>
+          <Button variant="outline" onClick={() => { setFetchError(false); refreshProfile(); }}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center">

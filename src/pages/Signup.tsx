@@ -77,12 +77,7 @@ const Signup = () => {
     setLoading(false);
 
     if (error) {
-      const msg = error.message?.includes('already registered')
-        ? 'An account with this email already exists.'
-        : error.message?.includes('Password')
-        ? 'Password must be at least 8 characters.'
-        : 'Could not create your account. Please try again.';
-      toast({ title: "Signup failed", description: msg, variant: "destructive" });
+      toast({ title: "Signup failed", description: mapSupabaseError(error), variant: "destructive" });
     } else {
       navigate('/onboarding');
     }
