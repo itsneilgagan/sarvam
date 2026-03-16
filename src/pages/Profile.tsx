@@ -38,6 +38,8 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const [upserting, setUpserting] = useState(false);
 
   // Provider services
   const [services, setServices] = useState<Service[]>([]);
