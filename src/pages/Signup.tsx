@@ -23,27 +23,30 @@ const Signup = () => {
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dobError, setDobError] = useState('');
+  const [confirmTouched, setConfirmTouched] = useState(false);
 
   const passwordChecks = useMemo(() => ({
     length: password.length >= 8,
     upper: /[A-Z]/.test(password),
+    lower: /[a-z]/.test(password),
     number: /[0-9]/.test(password),
     special: /[!@#$%^&*]/.test(password),
   }), [password]);
 
+  const allChecksPassed = Object.values(passwordChecks).every(Boolean);
+  const passwordsMatch = password === confirmPassword;
   const strength = Object.values(passwordChecks).filter(Boolean).length;
+  const strengthLevel = strength <= 1 ? 1 : strength <= 2 ? 2 : strength <= 4 ? 3 : 4;
 
-  const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength];
-  const strengthColor = ['', 'bg-destructive', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'][strength];
+  const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strengthLevel];
+  const strengthColors = ['', 'bg-destructive', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'];
+
+  const canSubmit = fullName && email && phone && dob && !dobError && allChecksPassed && passwordsMatch && confirmPassword && agreedTerms && !loading;
 
   const validateDob = () => {
     if (!dob) return;
     const age = (new Date().getTime() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-    if (age < 18) {
-      setDobError('You must be 18 or older to use Sarvam');
-    } else {
-      setDobError('');
-    }
+    setDobError(age < 18 ? 'You must be 18 or older to use Sarvam' : '');
   };
 
   const validatePhone = (val: string) => {
@@ -53,26 +56,10 @@ const Signup = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canSubmit) return;
 
-    if (!fullName || !email || !phone || !dob || !password || !confirmPassword) {
-      toast({ title: "Missing fields", description: "Please fill in all required fields.", variant: "destructive" });
-      return;
-    }
-    if (dobError) return;
     if (!validatePhone(phone)) {
       toast({ title: "Invalid phone", description: "Please enter a valid Indian phone number.", variant: "destructive" });
-      return;
-    }
-    if (strength < 3) {
-      toast({ title: "Weak password", description: "Please choose a stronger password.", variant: "destructive" });
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast({ title: "Password mismatch", description: "Passwords don't match.", variant: "destructive" });
-      return;
-    }
-    if (!agreedTerms) {
-      toast({ title: "Terms required", description: "Please agree to the Terms & Conditions.", variant: "destructive" });
       return;
     }
 
@@ -90,7 +77,9 @@ const Signup = () => {
 
     if (error) {
       const msg = error.message?.includes('already registered')
-        ? 'This email is already registered. Please sign in.'
+        ? 'An account with this email already exists.'
+        : error.message?.includes('Password')
+        ? 'Password must be at least 8 characters.'
         : 'Could not create your account. Please try again.';
       toast({ title: "Signup failed", description: msg, variant: "destructive" });
     } else {
@@ -99,8 +88,8 @@ const Signup = () => {
   };
 
   const CheckItem = ({ ok, text }: { ok: boolean; text: string }) => (
-    <div className={`flex items-center gap-2 text-xs ${ok ? 'text-green-500' : 'text-muted-foreground'}`}>
-      {ok ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />} {text}
+    <div className={`flex items-center gap-2 text-xs transition-colors ${ok ? 'text-green-500' : 'text-muted-foreground'}`}>
+      {ok ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />} {text}
     </div>
   );
 
@@ -117,25 +106,26 @@ const Signup = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>Full Name *</Label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Rahul Sharma" required />
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Rahul Sharma" required className="focus-visible:ring-primary" />
             </div>
 
             <div className="space-y-2">
               <Label>Email *</Label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="rahul@example.com" required />
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="rahul@example.com" required className="focus-visible:ring-primary" />
             </div>
 
             <div className="space-y-2">
               <Label>Phone Number *</Label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" required />
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" required className="focus-visible:ring-primary" />
             </div>
 
             <div className="space-y-2">
               <Label>Date of Birth *</Label>
-              <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} onBlur={validateDob} required />
+              <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} onBlur={validateDob} required className="focus-visible:ring-primary" />
               {dobError && <p className="text-xs text-destructive">{dobError}</p>}
             </div>
 
+            {/* Password */}
             <div className="space-y-2">
               <Label>Password *</Label>
               <div className="relative">
@@ -145,29 +135,36 @@ const Signup = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  className="pr-10 focus-visible:ring-primary"
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+
               {password && (
-                <div className="space-y-2">
+                <div className="space-y-3 pt-1">
+                  {/* Strength meter */}
                   <div className="flex gap-1">
                     {[1, 2, 3, 4].map(i => (
-                      <div key={i} className={`h-1 flex-1 rounded-full ${i <= strength ? strengthColor : 'bg-secondary'}`} />
+                      <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= strengthLevel ? strengthColors[strengthLevel] : 'bg-secondary'}`} />
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">{strengthLabel}</p>
-                  <div className="grid grid-cols-2 gap-1">
-                    <CheckItem ok={passwordChecks.length} text="8+ characters" />
-                    <CheckItem ok={passwordChecks.upper} text="Uppercase letter" />
-                    <CheckItem ok={passwordChecks.number} text="Number" />
-                    <CheckItem ok={passwordChecks.special} text="Special char" />
+                  <p className={`text-xs font-medium ${strengthColors[strengthLevel].replace('bg-', 'text-')}`}>{strengthLabel}</p>
+
+                  {/* Checklist */}
+                  <div className="grid grid-cols-1 gap-1.5">
+                    <CheckItem ok={passwordChecks.length} text="At least 8 characters" />
+                    <CheckItem ok={passwordChecks.upper} text="One uppercase letter (A-Z)" />
+                    <CheckItem ok={passwordChecks.lower} text="One lowercase letter (a-z)" />
+                    <CheckItem ok={passwordChecks.number} text="One number (0-9)" />
+                    <CheckItem ok={passwordChecks.special} text="One special character (!@#$%^&*)" />
                   </div>
                 </div>
               )}
             </div>
 
+            {/* Confirm Password */}
             <div className="space-y-2">
               <Label>Confirm Password *</Label>
               <div className="relative">
@@ -175,15 +172,17 @@ const Signup = () => {
                   type={showConfirm ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  onBlur={() => setConfirmTouched(true)}
                   placeholder="••••••••"
                   required
+                  className="pr-10 focus-visible:ring-primary"
                 />
-                <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {confirmPassword && password !== confirmPassword && (
-                <p className="text-xs text-destructive">Passwords don't match</p>
+              {confirmTouched && confirmPassword && !passwordsMatch && (
+                <p className="text-xs text-destructive">Passwords do not match</p>
               )}
             </div>
 
@@ -227,7 +226,7 @@ const Signup = () => {
               </label>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={!canSubmit}>
               {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Create Account
             </Button>

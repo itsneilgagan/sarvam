@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { createService, uploadServiceCover } from '@/lib/services';
-import { Loader2, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Upload, X, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 
 const CATEGORIES = [
   { value: 'Cleaning', emoji: '🧹' },
@@ -38,13 +39,14 @@ const CreateService = () => {
   const [isActive, setIsActive] = useState(true);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      toast({ title: "Invalid file", description: "Only JPG, PNG, or WebP images allowed.", variant: "destructive" });
+      toast({ title: "Invalid file type", description: "Only JPG, PNG, and WebP files are allowed.", variant: "destructive" });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -55,10 +57,22 @@ const CreateService = () => {
     setCoverPreview(URL.createObjectURL(file));
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const fakeEvent = { target: { files: [file] } } as any;
+      handleFileChange(fakeEvent);
+    }
+  };
+
   const addTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if ((e.key === 'Enter' || e.key === ',') && tagsInput.trim()) {
       e.preventDefault();
-      if (tags.length >= 8) return;
+      if (tags.length >= 8) {
+        toast({ title: "Max tags", description: "You can add up to 8 tags.", variant: "destructive" });
+        return;
+      }
       const newTag = tagsInput.trim().replace(',', '');
       if (newTag && !tags.includes(newTag)) {
         setTags([...tags, newTag]);
@@ -80,8 +94,10 @@ const CreateService = () => {
 
     let coverUrl: string | null = null;
     if (coverFile) {
+      setUploadProgress(30);
       coverUrl = await uploadServiceCover(coverFile);
-      if (!coverUrl) { setLoading(false); return; }
+      setUploadProgress(100);
+      if (!coverUrl) { setLoading(false); setUploadProgress(0); return; }
     }
 
     const result = await createService({
@@ -99,15 +115,34 @@ const CreateService = () => {
     });
 
     setLoading(false);
-    if (result) navigate('/profile');
+    setUploadProgress(0);
+    if (result) {
+      toast({ title: "🎉 Service published!", description: "Your service is now live!" });
+      navigate('/profile');
+    }
   };
+
+  const noCitySet = !profile?.city;
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-8">Create New Service</h1>
+        <h1 className="text-2xl font-bold mb-2">Create New Service</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {noCitySet && (
+          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-yellow-500">Complete your profile first</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Set your city in your profile to auto-fill service area.{' '}
+                <Link to="/profile" className="text-primary hover:underline">Go to Profile →</Link>
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Cover */}
@@ -124,22 +159,30 @@ const CreateService = () => {
                   >
                     <X className="w-4 h-4" />
                   </button>
+                  {uploadProgress > 0 && uploadProgress < 100 && (
+                    <div className="absolute bottom-0 left-0 right-0 p-2">
+                      <Progress value={uploadProgress} className="h-1.5" />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDrop}
                   className="w-full aspect-video rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 transition-colors"
                 >
                   <Upload className="w-8 h-8" />
-                  <span className="text-sm">Click or drag to upload</span>
+                  <span className="text-sm font-medium">Click to upload or drag image here</span>
+                  <span className="text-xs text-muted-foreground">JPG, PNG, WebP — max 5MB</span>
                 </button>
               )}
             </div>
 
             <div className="space-y-2">
               <Label>Service Title * <span className="text-xs text-muted-foreground">{title.length}/80</span></Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} placeholder="e.g., Professional Home Cleaning" required />
+              <Input value={title} onChange={(e) => setTitle(e.target.value.slice(0, 80))} placeholder="e.g., Professional Home Cleaning" required className="focus-visible:ring-primary" />
             </div>
 
             <div className="space-y-2">
@@ -162,19 +205,19 @@ const CreateService = () => {
 
             <div className="space-y-2">
               <Label>Short Description * <span className="text-xs text-muted-foreground">{shortDesc.length}/150</span></Label>
-              <Textarea value={shortDesc} onChange={(e) => setShortDesc(e.target.value.slice(0, 150))} placeholder="Brief summary shown on cards..." className="min-h-[80px]" required />
+              <Textarea value={shortDesc} onChange={(e) => setShortDesc(e.target.value.slice(0, 150))} placeholder="Brief summary shown on cards..." className="min-h-[80px] focus-visible:ring-primary" required />
             </div>
 
             <div className="space-y-2">
               <Label>Detailed Description <span className="text-xs text-muted-foreground">{description.length}/1000</span></Label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value.slice(0, 1000))} placeholder="Full description..." className="min-h-[120px]" />
+              <Textarea value={description} onChange={(e) => setDescription(e.target.value.slice(0, 1000))} placeholder="Full description..." className="min-h-[120px] focus-visible:ring-primary" />
             </div>
 
             <div className="space-y-2">
               <Label>Tags <span className="text-xs text-muted-foreground">{tags.length}/8</span></Label>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1">
+                  <Badge key={tag} className="bg-primary/20 text-primary border-0 gap-1">
                     {tag} <button type="button" onClick={() => removeTag(tag)} className="hover:text-destructive"><X className="w-3 h-3" /></button>
                   </Badge>
                 ))}
@@ -184,17 +227,18 @@ const CreateService = () => {
                 onChange={(e) => setTagsInput(e.target.value)}
                 onKeyDown={addTag}
                 placeholder="Type tag and press Enter"
+                className="focus-visible:ring-primary"
               />
             </div>
 
             <div className="space-y-2">
               <Label>Price in ₹ *</Label>
-              <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="500" min="1" required />
+              <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="500" min="1" required className="focus-visible:ring-primary" />
             </div>
 
             <div className="space-y-2">
               <Label>Service Area</Label>
-              <Input value={serviceArea} onChange={(e) => setServiceArea(e.target.value)} placeholder="Mumbai, Andheri West" />
+              <Input value={serviceArea} onChange={(e) => setServiceArea(e.target.value)} placeholder="Mumbai, Andheri West" className="focus-visible:ring-primary" />
             </div>
 
             <div className="flex items-center gap-3">
@@ -212,7 +256,7 @@ const CreateService = () => {
           <div className="hidden lg:block">
             <p className="text-sm text-muted-foreground mb-4">Live Preview</p>
             <div className="bg-card border border-border rounded-xl overflow-hidden sticky top-20">
-              <div className="aspect-video bg-secondary overflow-hidden">
+              <div className="relative aspect-video bg-secondary overflow-hidden">
                 {coverPreview ? (
                   <img src={coverPreview} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
@@ -223,18 +267,46 @@ const CreateService = () => {
                 {category && (
                   <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground rounded-full">{category}</Badge>
                 )}
+                {price && (
+                  <span className="absolute top-3 right-3 text-sm font-bold text-primary bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                    ₹{price}
+                  </span>
+                )}
               </div>
               <div className="p-4 space-y-2">
-                <h3 className="font-semibold">{title || 'Service Title'}</h3>
+                <h3 className="font-semibold line-clamp-1">{title || 'Service Title'}</h3>
                 <p className="text-sm text-muted-foreground line-clamp-2">{shortDesc || 'Short description...'}</p>
                 {tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {tags.slice(0, 3).map((tag, i) => (
                       <span key={i} className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">{tag}</span>
                     ))}
+                    {tags.length > 3 && (
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">+{tags.length - 3} more</span>
+                    )}
                   </div>
                 )}
-                <p className="text-lg font-bold text-primary">{price ? `₹${price}` : '₹---'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile preview */}
+          <div className="lg:hidden">
+            <p className="text-sm text-muted-foreground mb-4">Preview</p>
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="relative aspect-video bg-secondary overflow-hidden">
+                {coverPreview ? (
+                  <img src={coverPreview} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    <ImageIcon className="w-10 h-10" />
+                  </div>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="font-semibold">{title || 'Service Title'}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{shortDesc || 'Short description...'}</p>
+                <p className="text-lg font-bold text-primary mt-2">{price ? `₹${price}` : '₹---'}</p>
               </div>
             </div>
           </div>

@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, User, LogOut, Plus, Briefcase } from 'lucide-react';
+import { Menu, X, User, LogOut, Plus, Search } from 'lucide-react';
 
 const Navbar = () => {
   const { user, profile, signOut } = useAuth();
@@ -33,6 +33,15 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
+                {profile?.role === 'provider' ? (
+                  <Button size="sm" onClick={() => navigate('/services/new')}>
+                    <Plus className="w-4 h-4 mr-1" /> Add Service
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/browse')}>
+                    <Search className="w-4 h-4 mr-1" /> Browse Services
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 rounded-full px-3 py-1.5 hover:bg-secondary transition-colors">
