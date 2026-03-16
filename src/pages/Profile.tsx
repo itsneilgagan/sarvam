@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { updateProfile, uploadAvatar } from '@/lib/profiles';
@@ -8,11 +8,22 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import LocationModal from '@/components/LocationModal';
 import ServiceCard from '@/components/ServiceCard';
 import { EditServiceModal } from '@/components/EditServiceModal';
-import { User, MapPin, Camera, Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { User, MapPin, Camera, Loader2, Plus, AlertTriangle } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -32,6 +43,25 @@ const ProfilePage = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [deletingService, setDeletingService] = useState<Service | null>(null);
+
+  // Profile completion
+  const completion = useMemo(() => {
+    if (!profile) return { percent: 0, missing: [] as string[] };
+    const checks: [boolean, string][] = [
+      [!!profile.full_name, 'Full Name'],
+      [!!profile.phone, 'Phone'],
+      [!!profile.city, 'City'],
+      [!!profile.avatar_url, 'Avatar'],
+    ];
+    if (profile.role === 'provider') {
+      checks.push([!!profile.business_name, 'Business Name']);
+      checks.push([!!profile.bio, 'Bio']);
+    }
+    const done = checks.filter(([ok]) => ok).length;
+    const missing = checks.filter(([ok]) => !ok).map(([, label]) => label);
+    return { percent: Math.round((done / checks.length) * 100), missing };
+  }, [profile]);
 
   useEffect(() => {
     if (profile) {
@@ -56,8 +86,12 @@ const ProfilePage = () => {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      toast({ title: "Invalid file", description: "Only JPG, PNG, and WebP files are allowed.", variant: "destructive" });
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Max 5MB.", variant: "destructive" });
+      toast({ title: "File too large", description: "Max size is 5MB.", variant: "destructive" });
       return;
     }
     setAvatarLoading(true);
@@ -83,10 +117,11 @@ const ProfilePage = () => {
     setSaving(false);
   };
 
-  const handleDeleteService = async (id: string) => {
-    if (!window.confirm('Delete this service?')) return;
-    const ok = await deleteService(id);
-    if (ok) setServices(prev => prev.filter(s => s.id !== id));
+  const handleDeleteService = async () => {
+    if (!deletingService) return;
+    const ok = await deleteService(deletingService.id);
+    if (ok) setServices(prev => prev.filter(s => s.id !== deletingService.id));
+    setDeletingService(null);
   };
 
   const handleEditComplete = async () => {
@@ -108,10 +143,27 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen pb-20 md:pb-0">
       <div className="max-w-2xl mx-auto px-4 py-8">
+        {/* Incomplete profile banner */}
+        {completion.percent < 100 && (
+          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-500">Incomplete profile</p>
+                <p className="text-xs text-muted-foreground mt-1">Missing: {completion.missing.join(', ')}</p>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-3">
+              <Progress value={completion.percent} className="h-2 flex-1" />
+              <span className="text-xs text-muted-foreground shrink-0">{completion.percent}%</span>
+            </div>
+          </div>
+        )}
+
         {/* Avatar */}
         <div className="flex items-center gap-4 mb-8">
           <div className="relative">
-            <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+            <input ref={avatarRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarUpload} />
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-full object-cover" />
             ) : (
@@ -138,12 +190,12 @@ const ProfilePage = () => {
         <div className="space-y-4 mb-8">
           <div className="space-y-2">
             <Label>Full Name</Label>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="focus-visible:ring-primary" />
           </div>
 
           <div className="space-y-2">
             <Label>Phone</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" />
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 98765 43210" className="focus-visible:ring-primary" />
           </div>
 
           {/* Location */}
@@ -164,11 +216,11 @@ const ProfilePage = () => {
             <>
               <div className="space-y-2">
                 <Label>Business Name</Label>
-                <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+                <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} className="focus-visible:ring-primary" />
               </div>
               <div className="space-y-2">
                 <Label>Bio <span className="text-xs text-muted-foreground">{bio.length}/200</span></Label>
-                <Textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 200))} className="min-h-[80px]" />
+                <Textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 200))} className="min-h-[80px] focus-visible:ring-primary" />
               </div>
             </>
           )}
@@ -205,7 +257,7 @@ const ProfilePage = () => {
                     key={s.id}
                     service={s}
                     onEdit={setEditingService}
-                    onDelete={handleDeleteService}
+                    onDelete={(id) => setDeletingService(services.find(sv => sv.id === id) || null)}
                     showActions
                   />
                 ))}
@@ -219,7 +271,7 @@ const ProfilePage = () => {
           <div>
             <h2 className="text-xl font-bold mb-4">My Activity</h2>
             <div className="text-center py-12 bg-card rounded-xl border border-border">
-              <p className="text-muted-foreground mb-4">No saved services yet</p>
+              <p className="text-muted-foreground mb-4">Browse services and save your favorites</p>
               <Button variant="outline" onClick={() => navigate('/browse')}>Browse Services →</Button>
             </div>
           </div>
@@ -233,6 +285,23 @@ const ProfilePage = () => {
         service={editingService}
         onServiceUpdated={handleEditComplete}
       />
+
+      <AlertDialog open={!!deletingService} onOpenChange={(open) => !open && setDeletingService(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Service</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingService?.title}"? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteService} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

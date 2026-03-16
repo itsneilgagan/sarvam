@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, ArrowRight } from 'lucide-react';
 import { Service } from '@/lib/services';
 
 interface ServiceCardProps {
@@ -21,7 +21,7 @@ const ServiceCard = ({ service, onEdit, onDelete, showActions = false }: Service
 
   return (
     <div
-      className="group bg-card rounded-xl border border-border overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
+      className="group bg-card rounded-xl border border-border overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 hover:scale-[1.02] flex flex-col"
       onClick={() => navigate(`/services/${service.id}`)}
     >
       {/* Cover Image */}
@@ -45,12 +45,27 @@ const ServiceCard = ({ service, onEdit, onDelete, showActions = false }: Service
             {service.category}
           </Badge>
         )}
+        <span className="absolute top-3 right-3 text-sm font-bold text-primary bg-background/80 backdrop-blur-sm px-2 py-0.5 rounded-full">
+          {formatPrice(service.price)}
+        </span>
+
+        {/* Edit/Delete for owner */}
+        {showActions && (
+          <div className="absolute bottom-2 right-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
+            <Button variant="secondary" size="icon" className="h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm" onClick={() => onEdit?.(service)}>
+              <Pencil className="h-3 w-3" />
+            </Button>
+            <Button variant="secondary" size="icon" className="h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm text-destructive hover:text-destructive" onClick={() => onDelete?.(service.id)}>
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-2">
-        <h3 className="font-semibold text-foreground line-clamp-2 leading-tight">{service.title}</h3>
-        <p className="text-sm text-muted-foreground line-clamp-2">
+      <div className="p-4 space-y-2 flex-1 flex flex-col">
+        <h3 className="font-semibold text-foreground line-clamp-1 leading-tight">{service.title}</h3>
+        <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
           {service.short_description || service.description}
         </p>
 
@@ -61,23 +76,21 @@ const ServiceCard = ({ service, onEdit, onDelete, showActions = false }: Service
                 {tag}
               </span>
             ))}
+            {service.tags.length > 3 && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                +{service.tags.length - 3} more
+              </span>
+            )}
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2">
-          <span className="text-lg font-bold text-primary">{formatPrice(service.price)}</span>
-
-          {showActions && (
-            <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit?.(service)}>
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete?.(service.id)}>
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
-        </div>
+        <Button
+          variant="ghost"
+          className="w-full mt-auto pt-2 text-sm text-muted-foreground hover:text-primary"
+          onClick={(e) => { e.stopPropagation(); navigate(`/services/${service.id}`); }}
+        >
+          View Details <ArrowRight className="w-3.5 h-3.5 ml-1" />
+        </Button>
       </div>
     </div>
   );

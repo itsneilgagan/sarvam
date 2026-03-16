@@ -1,37 +1,54 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Search } from 'lucide-react';
+import { Search, X as XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import ServiceGrid from '@/components/ServiceGrid';
 
 const CATEGORIES = ['All', 'Cleaning', 'Plumbing', 'Beauty', 'Repairs', 'Tutoring', 'Outdoor', 'Tech', 'Events'];
-const SORT_OPTIONS = ['Relevance', 'Price: Low to High', 'Price: High to Low', 'Newest'];
 
 const Browse = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
   const initialCategory = searchParams.get('category') || 'All';
+  const initialMaxPrice = searchParams.get('maxPrice') ? parseInt(searchParams.get('maxPrice')!) : 5000;
+  const initialMinPrice = searchParams.get('minPrice') ? parseInt(searchParams.get('minPrice')!) : 0;
 
   const [searchInput, setSearchInput] = useState(initialQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
   const [category, setCategory] = useState(initialCategory);
-  const [priceRange, setPriceRange] = useState([0, 5000]);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [priceRange, setPriceRange] = useState([initialMinPrice, initialMaxPrice]);
+  const [resultCount, setResultCount] = useState<number | null>(null);
 
-  // Debounce
+  const hasActiveFilters = debouncedQuery || category !== 'All' || priceRange[0] > 0 || priceRange[1] < 5000;
+
+  // Debounce search
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(searchInput), 300);
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchInput);
+    }, 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const handleCategoryChange = (cat: string) => {
-    setCategory(cat);
-    const params = new URLSearchParams(searchParams);
-    if (cat !== 'All') params.set('category', cat); else params.delete('category');
+  // Sync filters to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedQuery) params.set('q', debouncedQuery);
+    if (category !== 'All') params.set('category', category);
+    if (priceRange[0] > 0) params.set('minPrice', priceRange[0].toString());
+    if (priceRange[1] < 5000) params.set('maxPrice', priceRange[1].toString());
     setSearchParams(params, { replace: true });
+  }, [debouncedQuery, category, priceRange, setSearchParams]);
+
+  const handleCategoryChange = (cat: string) => setCategory(cat);
+
+  const clearFilters = () => {
+    setSearchInput('');
+    setDebouncedQuery('');
+    setCategory('All');
+    setPriceRange([0, 5000]);
   };
 
   return (
@@ -46,7 +63,7 @@ const Browse = () => {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search for plumbers, tutors, cleaners..."
-              className="w-full h-12 pl-12 pr-4 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
+              className="w-full h-12 pl-12 pr-4 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary rounded-full"
             />
           </div>
 
@@ -69,9 +86,9 @@ const Browse = () => {
         </div>
       </div>
 
-      {/* Price filter */}
+      {/* Price filter + result info */}
       <div className="max-w-6xl mx-auto px-4 pt-6 pb-2">
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-4 text-sm">
           <span className="text-muted-foreground shrink-0">₹{priceRange[0]} — ₹{priceRange[1]}</span>
           <Slider
             min={0}
@@ -81,7 +98,17 @@ const Browse = () => {
             onValueChange={setPriceRange}
             className="max-w-xs"
           />
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-muted-foreground">
+              <XIcon className="w-3 h-3 mr-1" /> Clear filters
+            </Button>
+          )}
         </div>
+        {debouncedQuery && resultCount !== null && (
+          <p className="text-sm text-muted-foreground mt-3">
+            Showing {resultCount} result{resultCount !== 1 ? 's' : ''} for "{debouncedQuery}"
+          </p>
+        )}
       </div>
 
       {/* Results */}
@@ -91,9 +118,9 @@ const Browse = () => {
           category={category}
           minPrice={priceRange[0] > 0 ? priceRange[0] : undefined}
           maxPrice={priceRange[1] < 5000 ? priceRange[1] : undefined}
-          refreshTrigger={refreshTrigger}
           showActions={!!user}
           currentUserId={user?.id}
+          onResultCount={setResultCount}
         />
       </div>
     </div>

@@ -2,6 +2,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { listServices, deleteService, Service } from '@/lib/services';
 import ServiceCard from './ServiceCard';
 import { EditServiceModal } from './EditServiceModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ServiceGridProps {
   searchQuery?: string;
@@ -13,29 +23,32 @@ interface ServiceGridProps {
   refreshTrigger?: number;
   showActions?: boolean;
   currentUserId?: string;
+  onResultCount?: (count: number) => void;
 }
 
-const ServiceGrid = ({ searchQuery, category, minPrice, maxPrice, city, limit, refreshTrigger, showActions = false, currentUserId }: ServiceGridProps) => {
+const ServiceGrid = ({ searchQuery, category, minPrice, maxPrice, city, limit, refreshTrigger, showActions = false, currentUserId, onResultCount }: ServiceGridProps) => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [deletingService, setDeletingService] = useState<Service | null>(null);
 
   const fetchServices = useCallback(async () => {
     setLoading(true);
     const data = await listServices({ query: searchQuery, category, minPrice, maxPrice, city, limit });
     setServices(data);
+    onResultCount?.(data.length);
     setLoading(false);
-  }, [searchQuery, category, minPrice, maxPrice, city, limit]);
+  }, [searchQuery, category, minPrice, maxPrice, city, limit, onResultCount]);
 
   useEffect(() => {
     fetchServices();
   }, [fetchServices, refreshTrigger]);
 
-  const handleDelete = async (serviceId: string) => {
-    if (window.confirm('Are you sure you want to delete this service?')) {
-      const success = await deleteService(serviceId);
-      if (success) setServices(prev => prev.filter(s => s.id !== serviceId));
-    }
+  const handleDelete = async () => {
+    if (!deletingService) return;
+    const success = await deleteService(deletingService.id);
+    if (success) setServices(prev => prev.filter(s => s.id !== deletingService.id));
+    setDeletingService(null);
   };
 
   if (loading) {
@@ -72,7 +85,7 @@ const ServiceGrid = ({ searchQuery, category, minPrice, maxPrice, city, limit, r
             key={service.id}
             service={service}
             onEdit={(s) => setEditingService(s)}
-            onDelete={handleDelete}
+            onDelete={(id) => setDeletingService(services.find(s => s.id === id) || null)}
             showActions={showActions && currentUserId === service.provider_id}
           />
         ))}
@@ -84,6 +97,23 @@ const ServiceGrid = ({ searchQuery, category, minPrice, maxPrice, city, limit, r
         service={editingService}
         onServiceUpdated={() => { setEditingService(null); fetchServices(); }}
       />
+
+      <AlertDialog open={!!deletingService} onOpenChange={(open) => !open && setDeletingService(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Service</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingService?.title}"? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
