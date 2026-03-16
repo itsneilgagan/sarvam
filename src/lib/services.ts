@@ -20,7 +20,7 @@ export type Service = {
 
 export type ServiceInput = Omit<Service, 'id' | 'created_at' | 'updated_at'>;
 
-export async function listServices(options?: {
+interface ListOptions {
   query?: string;
   category?: string;
   minPrice?: number;
@@ -28,9 +28,11 @@ export async function listServices(options?: {
   city?: string;
   limit?: number;
   providerId?: string;
-}): Promise<Service[]> {
+}
+
+export async function listServices(options?: ListOptions): Promise<Service[]> {
   try {
-    let q = supabase
+    let q: any = supabase
       .from('services')
       .select('*')
       .eq('is_active', true)
@@ -50,10 +52,10 @@ export async function listServices(options?: {
       q = q.lte('price', options.maxPrice);
     }
     if (options?.city) {
-      q = q.eq('city' as any, options.city);
+      q = q.eq('city', options.city);
     }
     if (options?.providerId) {
-      q = q.eq('provider_id' as any, options.providerId);
+      q = q.eq('provider_id', options.providerId);
     }
     if (options?.limit) {
       q = q.limit(options.limit);
@@ -66,10 +68,10 @@ export async function listServices(options?: {
       return [];
     }
 
-    return (data || []).map(item => ({
+    return (data || []).map((item: any) => ({
       ...item,
       tags: item.tags || [],
-    })) as Service[];
+    }));
   } catch (error) {
     console.error('Error:', error);
     return [];
@@ -78,23 +80,19 @@ export async function listServices(options?: {
 
 export async function listProviderServices(providerId: string): Promise<Service[]> {
   try {
-    const { data, error } = await supabase
+    const { data, error }: any = await supabase
       .from('services')
       .select('*')
       .eq('provider_id' as any, providerId)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error:', error);
-      return [];
-    }
+    if (error) return [];
 
-    return (data || []).map(item => ({
+    return (data || []).map((item: any) => ({
       ...item,
       tags: item.tags || [],
-    })) as Service[];
-  } catch (error) {
-    console.error('Error:', error);
+    }));
+  } catch {
     return [];
   }
 }
@@ -108,7 +106,7 @@ export async function getService(id: string): Promise<Service | null> {
       .single();
 
     if (error) return null;
-    return { ...data, tags: data.tags || [] } as Service;
+    return { ...(data as any), tags: (data as any).tags || [] };
   } catch {
     return null;
   }
@@ -116,7 +114,7 @@ export async function getService(id: string): Promise<Service | null> {
 
 export async function createService(payload: ServiceInput): Promise<Service | null> {
   try {
-    const { data, error } = await supabase
+    const { data, error }: any = await supabase
       .from('services')
       .insert({
         title: payload.title,
@@ -140,7 +138,7 @@ export async function createService(payload: ServiceInput): Promise<Service | nu
     }
 
     toast({ title: "Success", description: "Service published successfully!" });
-    return { ...data, tags: data.tags || [] } as Service;
+    return { ...data, tags: data.tags || [] };
   } catch {
     toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
     return null;
@@ -149,7 +147,7 @@ export async function createService(payload: ServiceInput): Promise<Service | nu
 
 export async function updateService(id: string, patch: Partial<ServiceInput>): Promise<Service | null> {
   try {
-    const { data, error } = await supabase
+    const { data, error }: any = await supabase
       .from('services')
       .update(patch as any)
       .eq('id', id)
@@ -162,7 +160,7 @@ export async function updateService(id: string, patch: Partial<ServiceInput>): P
     }
 
     toast({ title: "Success", description: "Service updated!" });
-    return { ...data, tags: data.tags || [] } as Service;
+    return { ...data, tags: data.tags || [] };
   } catch {
     toast({ title: "Error", description: "Something went wrong.", variant: "destructive" });
     return null;
@@ -171,16 +169,11 @@ export async function updateService(id: string, patch: Partial<ServiceInput>): P
 
 export async function deleteService(id: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('services')
-      .delete()
-      .eq('id', id);
-
+    const { error } = await supabase.from('services').delete().eq('id', id);
     if (error) {
       toast({ title: "Error", description: "Failed to delete service.", variant: "destructive" });
       return false;
     }
-
     toast({ title: "Deleted", description: "Service removed." });
     return true;
   } catch {
@@ -193,10 +186,7 @@ export async function uploadServiceCover(file: File): Promise<string | null> {
   const ext = file.name.split('.').pop();
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
 
-  const { error } = await supabase.storage
-    .from('service-covers')
-    .upload(fileName, file);
-
+  const { error } = await supabase.storage.from('service-covers').upload(fileName, file);
   if (error) {
     toast({ title: "Upload Error", description: "Failed to upload image.", variant: "destructive" });
     return null;
