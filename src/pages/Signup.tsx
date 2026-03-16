@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
+import { mapSupabaseError } from '@/lib/errors';
 import { Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
 
 const Signup = () => {
