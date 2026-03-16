@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { mapSupabaseError } from "@/lib/errors";
 
 export type Service = {
   id: string;
@@ -134,7 +135,7 @@ export async function createService(payload: ServiceInput): Promise<Service | nu
       .single();
 
     if (error) {
-      toast({ title: "Error", description: "Failed to create service. Please try again.", variant: "destructive" });
+      toast({ title: "Error", description: mapSupabaseError(error), variant: "destructive" });
       return null;
     }
 

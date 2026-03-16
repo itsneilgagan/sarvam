@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
+import { mapSupabaseError } from '@/lib/errors';
 import { Eye, EyeOff, Loader2, Check, X } from 'lucide-react';
 
 const Signup = () => {
@@ -76,12 +77,7 @@ const Signup = () => {
     setLoading(false);
 
     if (error) {
-      const msg = error.message?.includes('already registered')
-        ? 'An account with this email already exists.'
-        : error.message?.includes('Password')
-        ? 'Password must be at least 8 characters.'
-        : 'Could not create your account. Please try again.';
-      toast({ title: "Signup failed", description: msg, variant: "destructive" });
+      toast({ title: "Signup failed", description: mapSupabaseError(error), variant: "destructive" });
     } else {
       navigate('/onboarding');
     }

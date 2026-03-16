@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { mapSupabaseError } from '@/lib/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,11 +27,28 @@ const Login = () => {
 
     setLoading(true);
     const { error } = await signIn(email, password);
-    setLoading(false);
 
     if (error) {
-      toast({ title: "Login failed", description: "Invalid email or password. Please try again.", variant: "destructive" });
+      setLoading(false);
+      toast({ title: "Login failed", description: mapSupabaseError(error), variant: "destructive" });
+      return;
+    }
+
+    // Fetch role for redirect
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      setLoading(false);
+      if (profile?.role === 'provider') navigate('/profile');
+      else if (profile?.role === 'customer') navigate('/browse');
+      else navigate('/onboarding');
     } else {
+      setLoading(false);
       navigate('/browse');
     }
   };
@@ -40,12 +59,11 @@ const Login = () => {
       return;
     }
     setForgotLoading(true);
-    const { supabase } = await import('@/integrations/supabase/client');
     await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setForgotLoading(false);
-    toast({ title: "Check your email", description: "We've sent you a password reset link." });
+    toast({ title: "Check your email", description: "Reset link sent to your email." });
   };
 
   return (
@@ -68,6 +86,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
+                className="focus-visible:ring-primary"
               />
             </div>
 
@@ -81,6 +100,7 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  className="focus-visible:ring-primary"
                 />
                 <button
                   type="button"
@@ -96,7 +116,7 @@ const Login = () => {
                 disabled={forgotLoading}
                 className="text-xs text-primary hover:underline float-right"
               >
-                Forgot Password?
+                {forgotLoading ? 'Sending...' : 'Forgot Password?'}
               </button>
             </div>
 
