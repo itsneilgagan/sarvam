@@ -37,8 +37,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
-      <Navbar />
-      <LocationBanner />
       {/* Hero */}
       <section className="flex flex-col items-center justify-center px-4 pt-24 pb-16 md:pt-32 md:pb-24">
         <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm rounded-full bg-secondary text-muted-foreground">
