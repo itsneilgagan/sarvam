@@ -66,7 +66,7 @@ const Signup = () => {
 
     setLoading(true);
     const nameParts = fullName.trim().split(' ');
-    const { error } = await signUp(email, password, {
+    const { error, data } = await signUp(email, password, {
       full_name: fullName,
       first_name: nameParts[0] || '',
       last_name: nameParts.slice(1).join(' ') || '',
@@ -78,6 +78,16 @@ const Signup = () => {
 
     if (error) {
       toast({ title: "Signup failed", description: mapSupabaseError(error), variant: "destructive" });
+      return;
+    }
+
+    // If email confirmation is required, session will be null
+    if (!data?.session) {
+      toast({
+        title: "Check your email ✉️",
+        description: "We've sent a verification link. Please verify your email then sign in.",
+      });
+      navigate('/login');
     } else {
       navigate('/onboarding');
     }
@@ -140,7 +150,6 @@ const Signup = () => {
 
               {password && (
                 <div className="space-y-3 pt-1">
-                  {/* Strength meter */}
                   <div className="flex gap-1">
                     {[1, 2, 3, 4].map(i => (
                       <div key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i <= strengthLevel ? strengthColors[strengthLevel] : 'bg-secondary'}`} />
@@ -148,7 +157,6 @@ const Signup = () => {
                   </div>
                   <p className={`text-xs font-medium ${strengthColors[strengthLevel].replace('bg-', 'text-')}`}>{strengthLabel}</p>
 
-                  {/* Checklist */}
                   <div className="grid grid-cols-1 gap-1.5">
                     <CheckItem ok={passwordChecks.length} text="At least 8 characters" />
                     <CheckItem ok={passwordChecks.upper} text="One uppercase letter (A-Z)" />
