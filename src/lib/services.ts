@@ -17,6 +17,9 @@ export type Service = {
   city?: string | null;
   created_at: string;
   updated_at: string;
+  // Joined provider profile
+  provider_name?: string | null;
+  provider_avatar?: string | null;
 };
 
 export type ServiceInput = Omit<Service, 'id' | 'created_at' | 'updated_at'>;
