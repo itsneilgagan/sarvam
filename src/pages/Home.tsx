@@ -6,9 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Search } from 'lucide-react';
 import { listServices, Service } from '@/lib/services';
 import ServiceCard from '@/components/ServiceCard';
-import Navbar from '@/components/Navbar';
-import BottomNav from '@/components/BottomNav';
-import LocationBanner from '@/components/LocationBanner';
 
 const CATEGORIES = ['All', 'Cleaning', 'Plumbing', 'Beauty', 'Repairs', 'Tutoring', 'Outdoor', 'Tech', 'Events'];
 
