@@ -17,6 +17,9 @@ export type Service = {
   city?: string | null;
   created_at: string;
   updated_at: string;
+  // Joined provider profile
+  provider_name?: string | null;
+  provider_avatar?: string | null;
 };
 
 export type ServiceInput = Omit<Service, 'id' | 'created_at' | 'updated_at'>;
@@ -36,12 +39,16 @@ export async function listServices(options?: ListOptions): Promise<Service[]> {
     let q: any = supabase
       .from('services')
       .select('*')
-      .eq('is_active', true)
       .order('created_at', { ascending: false });
+
+    // RLS already filters: is_active=true OR auth.uid()=provider_id
+    // For provider's own listing, don't add is_active filter
+    if (!options?.providerId) {
+      q = q.eq('is_active', true);
+    }
 
     if (options?.query?.trim()) {
       const search = options.query.trim();
-      // Use full-text search via search_vector, fallback to ilike for partial matches
       q = q.or(`title.ilike.%${search}%,description.ilike.%${search}%,short_description.ilike.%${search}%`);
     }
     if (options?.category && options.category !== 'All') {
@@ -70,10 +77,32 @@ export async function listServices(options?: ListOptions): Promise<Service[]> {
       return [];
     }
 
-    return (data || []).map((item: any) => ({
+    const services = (data || []).map((item: any) => ({
       ...item,
       tags: item.tags || [],
     }));
+
+    // Batch-fetch provider profiles for display
+    const providerIds = [...new Set(services.map((s: any) => s.provider_id).filter(Boolean))] as string[];
+    if (providerIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', providerIds);
+
+      if (profiles) {
+        const profileMap = new Map(profiles.map((p: any) => [p.id, p]));
+        for (const s of services) {
+          const p = (s as any).provider_id ? profileMap.get((s as any).provider_id) : null;
+          if (p) {
+            (s as any).provider_name = (p as any).full_name;
+            (s as any).provider_avatar = (p as any).avatar_url;
+          }
+        }
+      }
+    }
+
+    return services;
   } catch (error) {
     console.error('Error:', error);
     return [];

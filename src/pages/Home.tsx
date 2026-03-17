@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -94,11 +94,24 @@ const Home = () => {
               <div key={i} className="aspect-[4/5] bg-card rounded-xl animate-pulse" />
             ))}
           </div>
-        ) : (
+        ) : trending.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {trending.map((service) => (
               <ServiceCard key={service.id} service={service} />
             ))}
+          </div>
+        ) : (
+          <div className="text-center py-16 space-y-4">
+            <div className="text-5xl">🔍</div>
+            <h3 className="text-lg font-semibold text-foreground">No services yet</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Be the first to list a service on Sarvam!
+            </p>
+            {user && (
+              <Button asChild className="mt-2">
+                <Link to="/services/new">Add Your First Service</Link>
+              </Button>
+            )}
           </div>
         )}
       </section>
