@@ -69,6 +69,20 @@ const ServiceCard = ({ service, onEdit, onDelete, showActions = false }: Service
           {service.short_description || service.description}
         </p>
 
+        {/* Provider info */}
+        {(service as any).provider_name && (
+          <div className="flex items-center gap-2 pt-1">
+            {(service as any).provider_avatar ? (
+              <img src={(service as any).provider_avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
+                {((service as any).provider_name as string)?.[0]?.toUpperCase()}
+              </div>
+            )}
+            <span className="text-xs text-muted-foreground truncate">{(service as any).provider_name}</span>
+          </div>
+        )}
+
         {service.tags && service.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
             {service.tags.slice(0, 3).map((tag, i) => (
