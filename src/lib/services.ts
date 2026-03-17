@@ -41,7 +41,8 @@ export async function listServices(options?: ListOptions): Promise<Service[]> {
 
     if (options?.query?.trim()) {
       const search = options.query.trim();
-      q = q.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+      // Use full-text search via search_vector, fallback to ilike for partial matches
+      q = q.or(`title.ilike.%${search}%,description.ilike.%${search}%,short_description.ilike.%${search}%`);
     }
     if (options?.category && options.category !== 'All') {
       q = q.eq('category', options.category);
