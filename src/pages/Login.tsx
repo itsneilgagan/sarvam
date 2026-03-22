@@ -65,22 +65,23 @@ const Login = () => {
         role = upserted?.role || meta.role || 'customer';
       }
 
-      setLoading(false);
-
       if (role === 'provider') {
         const { count } = await supabase
           .from('services')
           .select('id', { count: 'exact', head: true })
           .eq('provider_id', user.id);
 
+        setLoading(false);
         if (!count || count === 0) {
           navigate('/services/new?welcome=1');
         } else {
           navigate('/profile');
         }
       } else if (role === 'customer') {
+        setLoading(false);
         navigate('/browse');
       } else {
+        setLoading(false);
         navigate('/onboarding');
       }
     } else {
