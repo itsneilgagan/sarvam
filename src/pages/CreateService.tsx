@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +26,9 @@ const CATEGORIES = [
 const CreateService = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const fileRef = useRef<HTMLInputElement>(null);
+  const accessToastShown = useRef(false);
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
@@ -41,6 +43,26 @@ const CreateService = () => {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [loading, setLoading] = useState(false);
+  const isWelcomeFlow = searchParams.get('welcome') === '1';
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    if (profile && profile.role !== 'provider') {
+      if (!accessToastShown.current) {
+        toast({
+          title: 'Providers only',
+          description: 'Only providers can create services. Update your role in profile.',
+          variant: 'destructive',
+        });
+        accessToastShown.current = true;
+      }
+      navigate('/browse', { replace: true });
+    }
+  }, [user, profile, navigate]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -90,6 +112,11 @@ const CreateService = () => {
       return;
     }
 
+    if (!coverFile) {
+      toast({ title: "Cover image required", description: "Please upload a service image before publishing.", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
 
     let coverUrl: string | null = null;
@@ -118,7 +145,7 @@ const CreateService = () => {
     setUploadProgress(0);
     if (result) {
       toast({ title: "🎉 Service published!", description: "Your service is now live!" });
-      navigate('/profile');
+      navigate(`/browse?created=1&q=${encodeURIComponent(title)}`);
     }
   };
 
@@ -128,6 +155,15 @@ const CreateService = () => {
     <div className="min-h-screen pb-20 md:pb-0">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-2">Create New Service</h1>
+
+        {isWelcomeFlow && (
+          <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 p-4">
+            <p className="text-sm font-medium text-primary">Set up your first service card</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Add a strong title, details, price, and a cover image so your service appears on Home and Browse.
+            </p>
+          </div>
+        )}
 
         {noCitySet && (
           <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl flex items-start gap-3">
