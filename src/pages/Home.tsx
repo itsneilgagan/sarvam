@@ -17,7 +17,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    listServices({ limit: 6 }).then(data => {
+    listServices({ limit: 6 }).then((data) => {
       setTrending(data);
       setLoading(false);
     });
@@ -37,11 +37,11 @@ const Home = () => {
       {/* Hero */}
       <section className="flex flex-col items-center justify-center px-4 pt-24 pb-16 md:pt-32 md:pb-24">
         <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm rounded-full bg-secondary text-muted-foreground">
-          🇮🇳 India's Service Marketplace
+          India's Service Marketplace
         </Badge>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-center max-w-3xl leading-tight tracking-tight mb-4">
-          Find trusted services near you
+          Search Sarvam 
         </h1>
 
         <p className="text-lg text-muted-foreground text-center max-w-xl mb-10">
@@ -57,8 +57,8 @@ const Home = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for plumbers, tutors, cleaners..."
-              className="w-full h-14 pl-14 pr-32 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-base"
-            />
+              className="w-full h-14 pl-14 pr-32 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-base" />
+            
             <Button type="submit" className="absolute right-2 h-10 px-6">
               Search
             </Button>
@@ -67,15 +67,15 @@ const Home = () => {
 
         {/* Category chips */}
         <div className="flex gap-2 overflow-x-auto scrollbar-hide max-w-xl w-full pb-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => navigate(`/browse${cat !== 'All' ? `?category=${cat}` : ''}`)}
-              className="shrink-0 px-4 py-2 rounded-full text-sm font-medium border border-border text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-            >
+          {CATEGORIES.map((cat) =>
+          <button
+            key={cat}
+            onClick={() => navigate(`/browse${cat !== 'All' ? `?category=${cat}` : ''}`)}
+            className="shrink-0 px-4 py-2 rounded-full text-sm font-medium border border-border text-muted-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors">
+            
               {cat}
             </button>
-          ))}
+          )}
         </div>
       </section>
 
@@ -88,32 +88,32 @@ const Home = () => {
           </Link>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="aspect-[4/5] bg-card rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : trending.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {trending.map((service) => (
-              <ServiceCard key={service.id} service={service} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16 space-y-4">
+        {loading ?
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) =>
+          <div key={i} className="aspect-[4/5] bg-card rounded-xl animate-pulse" />
+          )}
+          </div> :
+        trending.length > 0 ?
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {trending.map((service) =>
+          <ServiceCard key={service.id} service={service} />
+          )}
+          </div> :
+
+        <div className="text-center py-16 space-y-4">
             <div className="text-5xl">🔍</div>
             <h3 className="text-lg font-semibold text-foreground">No services yet</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
               Be the first to list a service on Sarvam!
             </p>
-            {user && (
-              <Button asChild className="mt-2">
+            {user &&
+          <Button asChild className="mt-2">
                 <Link to="/services/new">Add Your First Service</Link>
               </Button>
-            )}
+          }
           </div>
-        )}
+        }
       </section>
 
       {/* Footer */}
@@ -126,8 +126,8 @@ const Home = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>);
+
 };
 
 export default Home;
