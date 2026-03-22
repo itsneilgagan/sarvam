@@ -49,7 +49,16 @@ export async function listServices(options?: ListOptions): Promise<Service[]> {
 
     if (options?.query?.trim()) {
       const search = options.query.trim();
-      q = q.or(`title.ilike.%${search}%,description.ilike.%${search}%,short_description.ilike.%${search}%`);
+      const sanitizedSearch = search.replace(/[^\w\s-]/g, ' ').trim();
+
+      if (sanitizedSearch.length > 0) {
+        q = q.textSearch('search_vector', sanitizedSearch, {
+          type: 'websearch',
+          config: 'english',
+        });
+      } else {
+        q = q.or(`title.ilike.%${search}%,description.ilike.%${search}%,short_description.ilike.%${search}%`);
+      }
     }
     if (options?.category && options.category !== 'All') {
       q = q.eq('category', options.category);
