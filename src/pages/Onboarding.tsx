@@ -18,7 +18,7 @@ const Onboarding = () => {
 
   useEffect(() => {
     if (localStorage.getItem('onboarding_seen') === '1') {
-      navigate(profile?.role === 'provider' ? '/profile' : '/browse', { replace: true });
+      navigate(profile?.role === 'provider' ? '/services/new?welcome=1' : '/browse', { replace: true });
     }
   }, [navigate, profile]);
 
@@ -53,7 +53,7 @@ const Onboarding = () => {
 
       <div className="flex flex-col items-center gap-3">
         {profile?.role === 'provider' ? (
-          <Button size="lg" onClick={() => finish('/services/new')}>
+          <Button size="lg" onClick={() => finish('/services/new?welcome=1')}>
             Add Your First Service →
           </Button>
         ) : (

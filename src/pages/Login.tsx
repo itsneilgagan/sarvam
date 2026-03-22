@@ -34,7 +34,7 @@ const Login = () => {
       return;
     }
 
-    // Fetch profile for role-based redirect
+    // Ensure profile and perform role-based redirect
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data: profile } = await supabase
@@ -43,10 +43,47 @@ const Login = () => {
         .eq('id', user.id)
         .maybeSingle();
 
-      setLoading(false);
-      if (profile?.role === 'provider') navigate('/profile');
-      else if (profile?.role === 'customer') navigate('/browse');
-      else navigate('/onboarding');
+      let role = profile?.role;
+
+      if (!role) {
+        const meta = user.user_metadata || {};
+        const { data: upserted } = await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email || null,
+            full_name: meta.full_name || '',
+            first_name: meta.first_name || null,
+            last_name: meta.last_name || null,
+            phone: meta.phone || null,
+            role: meta.role || 'customer',
+            dob: meta.dob || null,
+          } as any, { onConflict: 'id' })
+          .select('role')
+          .single();
+
+        role = upserted?.role || meta.role || 'customer';
+      }
+
+      if (role === 'provider') {
+        const { count } = await supabase
+          .from('services')
+          .select('id', { count: 'exact', head: true })
+          .eq('provider_id', user.id);
+
+        setLoading(false);
+        if (!count || count === 0) {
+          navigate('/services/new?welcome=1');
+        } else {
+          navigate('/profile');
+        }
+      } else if (role === 'customer') {
+        setLoading(false);
+        navigate('/browse');
+      } else {
+        setLoading(false);
+        navigate('/onboarding');
+      }
     } else {
       setLoading(false);
       navigate('/browse');

@@ -89,7 +89,11 @@ const Signup = () => {
       });
       navigate('/login');
     } else {
-      navigate('/onboarding');
+      if (role === 'provider') {
+        navigate('/services/new?welcome=1');
+      } else {
+        navigate('/onboarding');
+      }
     }
   };
 

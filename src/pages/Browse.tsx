@@ -5,6 +5,7 @@ import { Search, X as XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import ServiceGrid from '@/components/ServiceGrid';
+import { toast } from '@/hooks/use-toast';
 
 const CATEGORIES = ['All', 'Cleaning', 'Plumbing', 'Beauty', 'Repairs', 'Tutoring', 'Outdoor', 'Tech', 'Events'];
 
@@ -21,6 +22,15 @@ const Browse = () => {
   const [category, setCategory] = useState(initialCategory);
   const [priceRange, setPriceRange] = useState([initialMinPrice, initialMaxPrice]);
   const [resultCount, setResultCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get('created') === '1') {
+      toast({
+        title: 'Service is live ✅',
+        description: 'Your newly created service now appears in search results.',
+      });
+    }
+  }, [searchParams]);
 
   const hasActiveFilters = debouncedQuery || category !== 'All' || priceRange[0] > 0 || priceRange[1] < 5000;
 
